@@ -1,2 +1,8 @@
 # AnchorEffectDetection
-Final project for a course on experimental design and causal inference. We set up a real world experiment to test the anchoring effect. 
+This was the final project for a course on experimental design and causal inference. We set up a real world experiment to test the anchoring effect. The details can be found in the final report pdf, but here is the abstract:
+
+# Abstract
+This project examines how the anchoring-and-adjustment heuristic influences business decision-making, specifically in interpreting a company's quarterly sales performance. Participants were presented with internal sales forecasts (anchors) followed by actual results. Three groups received different anchors: a control group, a low anchor ($10M forecast vs. $15M actual), and a high anchor ($20M forecast vs. $15M actual). We measured their perceptions of whether Q4 sales were successful after showing them either an upward or downward trending chart of the past 4 quarters of sales. Results showed that the high anchors biased respondents toward less favorable assessments, while the low anchors led to more positive evaluations. These effects persisted regardless of sales trends but were stronger with negative news. This suggests that anchors shape how people interpret ambiguous outcomes, with implications for business and behavioral economics.
+
+# Commentary
+The anchoring heuristic is the disproportionate influence on decision makers to make judgements that are biased towards an initially presented value. While simple to state and to measure, it is highly significant for both its ubiquity and utility, and has been documented in a wide variety of scenarios. This was an introductory course with a short time window and a small budget, so we tried to do something where we could conduct the experiment and collect data simply. We used a multifactorial design and interestingly we found no heterogeneous effects. 

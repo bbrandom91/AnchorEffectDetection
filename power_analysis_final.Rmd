@@ -1,0 +1,125 @@
+---
+title: "Power Analysis Report"
+author: "Brett Brandom, Andrew Wright, and Michelle Cheung"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+### Introduction
+
+In this assignment, we conduct a power analysis through simulation for an experiment under three different scenarios, varying the assumed treatment effect size. Power, the probability of rejecting the null hypothesis when it is false, depends on both the effect size and the sample size. Our goal is to estimate the required sample size to achieve adequate power (typically 0.8 or higher) in each scenario. 
+
+We derived our effect sizes from Mussweiler and Strack’s 2008 study on anchoring effects, particularly from Panel A of Experiment 1 in their paper, which is available [here](https://www.sciencedirect.com/science/article/pii/S0022103108001054). This literature forms the basis for our project, which investigates the anchoring effect by manipulating anchor values in decision-making.
+
+The three scenarios simulated are:
+1. A constant, moderate treatment effect (`tau = 0.8`), reflecting findings from prior studies.
+2. A variable treatment effect (`tau ~ N(0.8, 0.4)`), representing uncertainty in the effect size.
+3. A smaller, constant treatment effect (`tau = 0.4`), testing for more subtle anchoring effects.
+
+Our experiment aims to examine how exposure to high or low anchor values influences decision-makers, as explained in our project proposal, which involves anchoring participants' estimates around a question such as the sinking year of the Titanic.
+
+
+```{r}
+library(data.table)
+#library(tidyverse)
+library(tibble)
+library(ggplot2)
+```
+
+### Power Calculation
+This section defines a function `power.calculator`, which calculates the empirical power of a two-sample t-test by running 1,000 simulations on randomly sampled data. It returns the proportion of p-values less than 0.05, indicating the power to reject the null hypothesis at different sample sizes.
+
+```{r}
+power.calculator <- function(prop.size) {
+  t_test_p_values <- rep(NA, 1000)
+  n.obs <- nrow(d)
+  slice.sample.size <- ceiling(prop.size * nrow(d) / 2)
+  
+  for (i in 1:1000){
+  d.tiny <- d |>
+    dplyr::group_by(D) |>
+    dplyr::slice_sample(n=slice.sample.size, replace=TRUE) |>
+    dplyr::ungroup()
+  
+    d.tiny <- data.table(d.tiny)
+    t_test_high_untreated <- t.test(d.tiny[D== 0, Y],
+    d.tiny[D== 1, Y],
+    alternative = "two.sided")
+    t_test_p_values[i] <- t_test_high_untreated$p.value
+  }
+  small.power <- mean(t_test_p_values < 0.05)
+  return(small.power)
+}
+```
+
+### Data Generation for Power Analysis
+
+In this section, we generate three sets of simulated data to represent different treatment effect sizes (`tau`). The first scenario assumes a constant moderate treatment effect (`tau = 0.8`), the second introduces variability in the treatment effect (`tau ~ N(0.8, 0.4)`), and the third assumes a smaller constant effect (`tau = 0.4`). For each scenario, power is calculated across a range of sample sizes using the `power.calculator` function.
+
+```{r}
+# generate data
+# set tau = constant
+
+population.size <- 200
+tau = 0.8
+
+d <- data.table(
+  id = 1:population.size,
+  D = sample(-1:1, population.size, replace = TRUE),
+  X = rnorm(population.size, mean = 0, sd = 1)
+)
+
+d[, Y := X + D*tau]
+
+percentages_to_sample <- seq(from = 0.1, to = 1, by = 0.05)
+powers_tau_1 <- sapply(percentages_to_sample, power.calculator)
+
+# set tau = variable
+d <- data.table(
+  id = 1:population.size,
+  D = sample(-1:1, population.size, replace = TRUE),
+  X = rnorm(population.size, mean = 0, sd = 1),
+  tau_var=rnorm(population.size, mean=0.8, sd=0.4)
+)
+
+d[, Y := X + D*tau_var]
+percentages_to_sample <- seq(from = 0.1, to = 1, by = 0.05)
+powers_tau_2 <- sapply(percentages_to_sample, power.calculator)
+
+# set tau = constant (small effect)
+
+tau = 0.4
+
+d <- data.table(
+  id = 1:population.size,
+  D = sample(-1:1, population.size, replace = TRUE),
+  X = rnorm(population.size, mean = 0, sd = 1)
+  )
+
+d[, Y := X + D*tau]
+percentages_to_sample <- seq(from = 0.1, to = 1, by = 0.05)
+powers_tau_3 <- sapply(percentages_to_sample, power.calculator)
+```
+
+### Visualization of Power vs Sample Size
+This section visualizes the relationship between sample size and power across the three different treatment effect scenarios using a line plot, where each line represents a different effect size.
+
+```{r}
+plotter <- tibble(
+  sample.size = rep(percentages_to_sample * population.size, 3),
+  power = c(powers_tau_1, powers_tau_2, powers_tau_3),
+  condition = rep(c("tau 0.8", "variable tau", "tau 0.4"), each = length(percentages_to_sample))
+)
+
+ggplot(plotter, aes(x = sample.size, y = power, color = condition)) +
+  geom_line() +
+  geom_point() +
+  ggtitle("Expected Power vs Sample Size by Treatment Effect") +
+  xlab("Sample Size") +
+  ylab("Power") +
+  scale_color_manual(values = c("tau 0.8" = "blue", "variable tau" = "red", "tau 0.4" = "green"))
+```
+
+### Findings
+The plot shows that power increases with sample size in all three scenarios. Interestingly, the variable treatment effect (`tau ~ N(0.8, 0.4)`) reaches sufficient power (0.8 or higher) slightly quicker than the constant moderate treatment effect (`tau = 0.8`), though both are quite similar. In contrast, the scenario with the smallest effect size (`tau = 0.4`) requires a much larger sample size to achieve the same power, emphasizing the challenge of detecting weaker effects.
+
